@@ -1,0 +1,35 @@
+---
+stages:
+  # Multipe stages (Cloudformation stacks) can be defined
+  # in the pipeline
+  - name: General
+    permission_sets:
+      - permission_set_name: ViewOnlyAccess
+        description: "Provides view-only to all AWS accounts"
+        session_duration: PT04H
+        # One or more AWS Managed policies can be attached to the permission set
+        aws_managed_policies:
+          - arn:aws:iam::aws:policy/ViewOnlyAccess
+        # The inline policy document file can contain an IAM policy and is attached to the Permission Set
+        #inline_policy_document_file:
+        ou_assignments:
+          - path: /Root
+            recursive: true
+        # Map Permission Set directly to accounts. Use sparingly as it's not portable between Orgs/environments.
+        # Also, make sure to quote account id's as string or they will be wrongly interpreted as integer
+        # account_assignments:
+        # - "123456789012"
+        # What identity store groups (prefix + name) to assign the permission set to
+        group_assignments:
+          - name: ViewOnlyAccess
+      - permission_set_name: PowerUserAccess
+        description: "Provides PowerUserAccess permissions to Development AWS accounts"
+        session_duration: PT04H
+        aws_managed_policies:
+          - arn:aws:iam::aws:policy/PowerUserAccess
+        inline_policy_document_file: policies/PowerUserAccess.json
+        ou_assignments:
+          - path: /Root/Development
+            recursive: true
+        group_assignments:
+          - name: PowerUserAccess
