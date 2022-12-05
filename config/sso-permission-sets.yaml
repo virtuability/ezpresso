@@ -4,12 +4,12 @@ stages:
   # in the pipeline
   - name: General
     permission_sets:
-      - permission_set_name: ViewOnlyAccess
-        description: "Provides view-only to all AWS accounts"
+      - permission_set_name: ViewAccess
+        description: "Provides view access to all AWS accounts"
         session_duration: PT04H
         # One or more AWS Managed policies can be attached to the permission set
         aws_managed_policies:
-          - arn:aws:iam::aws:policy/ViewOnlyAccess
+          - arn:aws:iam::aws:policy/job-function/ViewOnlyAccess
         # The inline policy document file can contain an IAM policy and is attached to the Permission Set
         #inline_policy_document_file:
         ou_assignments:
@@ -22,8 +22,8 @@ stages:
         # What identity store groups (prefix + name) to assign the permission set to
         group_assignments:
           - name: ViewOnlyAccess
-      - permission_set_name: PowerUserAccess
-        description: "Provides PowerUserAccess permissions to Development AWS accounts"
+      - permission_set_name: PowerAccess
+        description: "Provides Power access permissions to Development AWS accounts"
         session_duration: PT04H
         aws_managed_policies:
           - arn:aws:iam::aws:policy/PowerUserAccess

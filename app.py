@@ -13,27 +13,27 @@ from utility.file_helpers import file_read_yaml
 app = cdk.App()
 
 # Enable remote debug as needed locally (VSCode remote debug)
-if app.node.try_get_context('debug') == "true":
+if app.node.try_get_context("debug") == "true":
     import debugpy
 
     debugpy.listen(5678)
     print("Waiting for debugger attach")
     debugpy.wait_for_client()
     debugpy.breakpoint()
-    print('break on this line')
+    print("break on this line")
 
 context_keys = [
-    'env_name',
-    'group_prefix',
-    'permission_sets_file',
-    'codestar_connection_arn',
-    'github_repo',
-    'github_repo_branch',
-    'sso_instance_arn',
-    'identity_store'
+    "env_name",
+    "group_prefix",
+    "permission_sets_file",
+    "codestar_connection_arn",
+    "github_repo",
+    "github_repo_branch",
+    "sso_instance_arn",
+    "identity_store",
 ]
 
-properties={}
+properties = {}
 
 for context_key in context_keys:
     context = app.node.try_get_context(context_key)
@@ -41,26 +41,30 @@ for context_key in context_keys:
         raise ValueError(f"Must specify context parameter: {context_key}")
     properties[context_key] = context
 
-content = file_read_yaml(properties['permission_sets_file'])
+content = file_read_yaml(properties["permission_sets_file"])
 permission_sets = PermissionSets(content)
 
-if 'accounts_file' in properties:
-    content = file_read_yaml(properties['accounts_file'])
+accounts_file = app.node.try_get_context("accounts_file")
+if accounts_file is not None:
+    content = file_read_yaml(accounts_file)
     account_structure = AccountStructure(content)
 else:
     # CDK is run (deploy/diff/ls) outside of pipeline (CodeBuild)
     # so use empty account structure to bootstrap pipeline itself
     account_structure = AccountStructure({"Accounts": []})
 
-if 'group_mappings_file' in properties:
-    content = file_read_yaml(properties['group_mappings_file'])
-    group_mappings = GroupMappings(content)
+group_mappings_file = app.node.try_get_context("group_mappings_file")
+if group_mappings_file is not None:
+    content = file_read_yaml(group_mappings_file)
+    group_mappings = GroupMappings(properties["group_prefix"], content)
 else:
     # CDK is run (deploy/diff/ls) outside of pipeline (CodeBuild)
     # so use empty groups mappings to bootstrap pipeline itself
-    group_mappings = GroupMappings(properties['group_prefix'], [])
+    group_mappings = GroupMappings(properties["group_prefix"], [])
 
-PipelineStack(app, f"SSOPipeline",
+PipelineStack(
+    app,
+    f"SSOPipeline",
     env=cdk.Environment(
         account=os.environ["CDK_DEFAULT_ACCOUNT"],
         region=os.environ["CDK_DEFAULT_REGION"],
