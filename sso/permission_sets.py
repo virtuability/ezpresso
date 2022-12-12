@@ -1,5 +1,5 @@
-
 from typing import List, Dict
+
 
 class PermissionSets:
 
@@ -9,4 +9,4 @@ class PermissionSets:
         self.__permission_sets = permission_sets
 
     def get_stages(self) -> List[Dict]:
-        return self.__permission_sets['stages']
+        return self.__permission_sets["stages"]

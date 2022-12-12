@@ -1,8 +1,8 @@
-# expresso
+# Ezpresso
 
 ## Background
 
-Expresso is a CDK app that will automatically provision user-defined AWS SSO Permissions Sets and Assignments based on account structure and mappings for the AWS Organization.
+Ezpresso is a CDK app that will automatically provision user-defined AWS SSO Permissions Sets and Assignments based on account structure and mappings for the AWS Organization.
 
 Ezpresso is backed by the AWS CDK Pipeline for automated deployment of changes.
 
@@ -13,31 +13,36 @@ If accounts are provisioned through Control Tower or changes are made to the OU 
 * [RegisterOrganizationalUnit](https://docs.aws.amazon.com/controltower/latest/userguide/lifecycle-events.html#register-organizational-unit)
 * [DeregisterOrganizationalUnit](https://docs.aws.amazon.com/controltower/latest/userguide/lifecycle-events.html#deregister-organizational-unit)
 
+Note that the CDK app configuration is split into two parts:
+
+* SSO Permission Sets configuration, which can be carried between AWS Organizations. Permission Sets are configured in a YAML file, which can be checked in. This file must be checked into the repository
+* Organization-specific configuration. This configuration is provided via CDK context. This configuration can be provided in one of three ways - see later.
+
 ## Prerequisites
 
-The following prerequisites must be actioned in order to carry out a successful deployment of the CDK app and pipeline.
+The following prerequisites must be actioned to carry out a successful deployment of the CDK app and pipeline.
 
 ### Node.js 16+
 
 The CDK requires the Node.js 16+ runtime.
 
-A simple option is to use [nvm](https://github.com/nvm-sh/nvm) to manage Node.js and to install in the local user environment without the need for root/sudo.
+A simple option is to use [nvm](https://github.com/nvm-sh/nvm) to manage Node without the need to use root.
 
 ### CDK version 2+
 
 CDK version 2+ must be [installed](https://docs.aws.amazon.com/cdk/v2/guide/getting_started.html) to deploy the pipeline and stacks.
 
-Simplest option is to execute `npm install -g aws-cdk`.
+The simplest option is to execute `npm install -g aws-cdk` through nvm-sh, without the need to use root.
 
 ### AWS credentials for the AWS Organizations Management account
 
-Source a suitable set of AWS credentials to the AWS Organizations management account, which will allow deployment of AWS resources including CodePipeline, CodeBuild, IAM roles and policies.
+Source a suitable set of AWS credentials to the AWS Organizations & Control Tower management account, which will allow deployment of AWS resources including CodePipeline, CodeBuild, IAM roles and policies.
 
 ### Fork this repository
 
-Fork this repository to your own or company github owner/name.
+Fork this repository to your own or a company GitHub owner/name.
 
-Record the github owner/name for later.
+Record the GitHub owner/name for later.
 
 ### Configure a CodeStar Connection
 
@@ -45,11 +50,11 @@ Create a [CodeStar Connection to GitHub](https://docs.aws.amazon.com/codepipelin
 
 This connection enables the CDK pipeline to get access to the GitHub repository and set-up a webhook for commit/merge notifications.
 
-Record the Arn of the connection.
+Record the ARN of the connection.
 
 ### CDK bootstrap AWS Organizations management account
 
-Bootstrap the AWS Organizations management account with the CDK in the region where AWS SSO exists:
+Bootstrap the AWS Organizations management account with the CDK in the region where AWS SSO is installed and configured:
 
 ```bash
 cdk bootstrap aws://<account id>/<region>
@@ -57,7 +62,7 @@ cdk bootstrap aws://<account id>/<region>
 
 ### Decide on an identity store group prefix
 
-In order to uniquely identify groups in the chosen SSO-integrated identity store, it is strongly recommended that a prefix is chosen for each group.
+To uniquely identify groups in the chosen SSO-integrated identity store, it is strongly recommended that a prefix is chosen for each group.
 
 This makes identifying, filtering and sorting groups in the identity store simpler.
 
@@ -65,15 +70,15 @@ Example: `AWS_SSO_`.
 
 ### Identify required AWS Organizations parameters 
 
-* SSO instance Arn: In the AWS Organizations management account either use the AWS Identity Center Management Console to find it or execute the following CLI command: `aws sso-admin list-instances --query ' Instances[0].InstanceArn'`
+* SSO instance ARN: In the AWS Organizations management account either use the AWS Identity Center Management Console to find the ARN or execute the following CLI command: `aws sso-admin list-instances --query ' Instances[0].InstanceArn'`
 
-* SSO Identity Store Id: In the AWS Organizations management account either use the AWS Identity Center Management Console to find it or execute the following CLI command: `aws sso-admin list-instances --query ' Instances[0].IdentityStoreId'`
+* SSO Identity Store Id: In the AWS Organizations management account either use the AWS Identity Center Management Console to find the Id or execute the following CLI command: `aws sso-admin list-instances --query ' Instances[0].IdentityStoreId'`
 
 Record the values for later.
 
 ### Define AWS SSO groups
 
-Before attempting to deploy SSO Permission Sets, the mapped identity store groups must exist in the chosen identity store and be replicated to the AWS SSO identity store.
+Before attempting to deploy SSO Permission Sets, the mapped identity store groups must exist in the chosen identity store and be replicated in the AWS SSO identity store.
 
 Important! Ensure that *all* of the created identity store groups have the group prefix, e.g. `AWS_SSO_`, which will be used to link the SSO permission sets to the groups (see above). 
 
@@ -105,7 +110,7 @@ The required configuration for the CDK app per the last two options is:
     "env_name": "dev", # Environment and pipeline postfix (e.g. dev/test/prod)
     "permission_sets_file": "config/sso-permission-sets.yaml", # The Yaml file containing the SSO Permission Sets definitionsß
     "codestar_connection_arn": "arn:aws:codestar-connections:eu-west-1:123456789012:connection/12345678-1234-1234-abcd-1234567890ab", # The CodeStar Connection Arn from above
-    "github_repo": "mjvirt/expresso", # GitHub repository owner/name
+    "github_repo": "virtuability/ezpresso", # GitHub repository owner/name
     "github_repo_branch": "main", # Git branch that CDK app and pipeline run from
     "sso_instance_arn": "arn:aws:sso:::instance/ssoins-01234567890abcdef", # The SSO instance Arn from above
     "identity_store": "d-1234567890", # The identity store id from above
@@ -133,7 +138,7 @@ cdk deploy \
     -c env_name=dev \
     -c permission_sets_file=config/sso-permission-sets.yaml \
     -c codestar_connection_arn=arn:aws:codestar-connections:eu-west-1:123456789012:connection/12345678-1234-1234-abcd-1234567890ab \
-    -c github_repo=mjvirt/expresso \
+    -c github_repo=virtuability/ezpresso \
     -c github_repo_branch=main \
     -c sso_instance_arn=arn:aws:sso:::instance/ssoins-01234567890abcdef \
     -c identity_store=d-1234567890 \
@@ -142,7 +147,7 @@ cdk deploy \
 
 ## Operating
 
-As previously mentioned, the CDK pipeline and CDK app will automatically execute for certain Control Tower [Lifecycle Events](https://docs.aws.amazon.com/controltower/latest/userguide/lifecycle-events.html).
+As previously mentioned, the CDK pipeline and CDK app will automatically execute on certain Control Tower [Lifecycle Events](https://docs.aws.amazon.com/controltower/latest/userguide/lifecycle-events.html).
 
 In addition, the pipeline will automatically execute on commit/merge to the chosen pipeline branch.
 
@@ -168,7 +173,7 @@ The following points are worth bearing in mind about the CDK app implementation:
 * The `aws identitystore list-groups` SDK & CLI call [do not allow for wildcard searches](https://github.com/aws/aws-sdk/issues/109). Identity store group names must therefore be predictable (lookup by `group prefixes` + `group name`). This is achieved in the script `scripts/get-sso-group-mappings.py`, which iterates through the SSO Permission Sets configuration file to collect all group names to perform a lookup of each SSO group id
 
 * Several stages/stacks of SSO Permission Sets can be deployed by the pipeline. There can be several reasons for doing this:
-    * To logically group SSO Permission Sets together and deploy them in order
+    * To logically group SSO Permission Sets and deploy them in order
     * So many defined permission sets that SSO throttles Cloudformation deployment
     * To ensure that the size of the Cloudformation template stays below AWS limits
 
@@ -184,7 +189,7 @@ Enjoy!
 
 ## License
 
-   Copyright [2022] [Morten Jensen]
+   Copyright 2022 Virtuability
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.

@@ -6,7 +6,7 @@ from aws_cdk import (
     pipelines as pipelines,
     aws_codebuild as codebuild,
     aws_events as events,
-    aws_events_targets as targets
+    aws_events_targets as targets,
 )
 
 from pipeline.stage import SSOStage
@@ -17,18 +17,29 @@ from sso.permission_sets import PermissionSets
 # Note that there is an original and a modern version of CDK pipelines
 # as per https://github.com/aws/aws-cdk/blob/master/packages/@aws-cdk/pipelines/ORIGINAL_API.md
 
-class PipelineStack (cdk.Stack):
-    def __init__(self, scope: cdk.App, construct_id: str, properties: dict, account_structure: AccountStructure, group_mappings: GroupMappings, permission_sets: PermissionSets, **kwargs) -> None:
+
+class PipelineStack(cdk.Stack):
+    def __init__(
+        self,
+        scope: cdk.App,
+        construct_id: str,
+        properties: dict,
+        account_structure: AccountStructure,
+        group_mappings: GroupMappings,
+        permission_sets: PermissionSets,
+        **kwargs,
+    ) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
         # Preference for CodePipeline V2 integration via CodeStar Connection
         pipeline_input = pipelines.CodePipelineSource.connection(
-            repo_string=properties['github_repo'],
-            branch=properties['github_repo_branch'],
-            connection_arn=properties['codestar_connection_arn'],
+            repo_string=properties["github_repo"],
+            branch=properties["github_repo_branch"],
+            connection_arn=properties["codestar_connection_arn"],
         )
 
-        synth_action = pipelines.ShellStep('Synth',
+        synth_action = pipelines.ShellStep(
+            "Synth",
             input=pipeline_input,
             commands=[
                 f"pip install -r requirements.txt",
@@ -49,13 +60,15 @@ class PipelineStack (cdk.Stack):
                 f" -c github_repo={properties['github_repo']}"
                 f" -c github_repo_branch={properties['github_repo_branch']}"
                 f" -c sso_instance_arn={properties['sso_instance_arn']}"
-                f" -c accounts_file=accounts.json"
-                f" -c group_mappings_file=group-mappings.json"
-                f" -c identity_store={properties['identity_store']}"
-            ]
+                f" -c accounts_file=accounts.yaml"
+                f" -c group_mappings_file=group-mappings.yaml"
+                f" -c identity_store={properties['identity_store']}",
+            ],
         )
 
-        pipeline = pipelines.CodePipeline(self, f"SSOPipeline{properties['env_name']}",
+        pipeline = pipelines.CodePipeline(
+            self,
+            f"SSOPipeline{properties['env_name']}",
             cross_account_keys=True,
             code_build_defaults=self.__codebuild_default_options(),
             synth=synth_action,
@@ -64,44 +77,47 @@ class PipelineStack (cdk.Stack):
 
         for stage in permission_sets.get_stages():
             pipeline.add_stage(
-                SSOStage(self, 
+                SSOStage(
+                    self,
                     f"SSOStage",
                     properties=properties,
                     account_structure=account_structure,
                     group_mappings=group_mappings,
-                    permission_sets=stage['permission_sets'],
+                    permission_sets=stage["permission_sets"],
                 ),
             )
 
         # Build pipeline to make available for event rule target
         pipeline.build_pipeline()
 
-        ct_lifecycle_event_rule = events.Rule(self, f"ControlTowerLifecycleEventRule",
-            description='Capture Control Tower Lifecycle Events',
+        ct_lifecycle_event_rule = events.Rule(
+            self,
+            f"ControlTowerLifecycleEventRule",
+            description="Capture Control Tower Lifecycle Events",
             rule_name=f"ControlTowerLifecycleEvents-{properties['env_name']}",
             enabled=True,
             event_pattern=events.EventPattern(
-                source=['aws.controltower'],
-                detail_type=['AWS API Call via CloudTrail'],
+                source=["aws.controltower"],
+                detail_type=["AWS API Call via CloudTrail"],
                 detail={
-                    'eventSource': ['controltower.amazonaws.com'],
-                    'eventName': ['CreateManagedAccount', 'UpdateManagedAccount', 'RegisterOrganizationalUnit', 'DeregisterOrganizationalUnit'],
+                    "eventSource": ["controltower.amazonaws.com"],
+                    "eventName": [
+                        "CreateManagedAccount",
+                        "UpdateManagedAccount",
+                        "RegisterOrganizationalUnit",
+                        "DeregisterOrganizationalUnit",
+                    ],
                 },
-            )
+            ),
         )
 
-        ct_lifecycle_event_rule.add_target(
-            targets.CodePipeline(
-                pipeline=pipeline.pipeline
-            )
-        )
-
+        ct_lifecycle_event_rule.add_target(targets.CodePipeline(pipeline=pipeline.pipeline))
 
     def __codebuild_default_options(self) -> pipelines.CodeBuildOptions:
-        """ Create CodeBuild defaults for Amazon Linux 2 (version 3)
-            with required AWS Organizations permissions to do lookups
+        """Create CodeBuild defaults for Amazon Linux 2 (version 3)
+        with required AWS Organizations permissions to do lookups
         """
-        role_policy=[
+        role_policy = [
             # iam.PolicyStatement(
             #     sid='CDKAssumeLookup',
             #     effect=iam.Effect.ALLOW,
@@ -111,25 +127,25 @@ class PipelineStack (cdk.Stack):
             #     resources=[ f"arn:aws:iam::*:role/cdk-hnb659fds-lookup-role-*-*" ],
             # ),
             iam.PolicyStatement(
-                sid='IdLookup',
+                sid="IdLookup",
                 effect=iam.Effect.ALLOW,
                 actions=[
-                    'sso:List*',
-                    'sso:Describe*',
-                    'identitystore:List*',
-                    'identitystore:Describe*',
+                    "sso:List*",
+                    "sso:Describe*",
+                    "identitystore:List*",
+                    "identitystore:Describe*",
                 ],
-                resources=['*'],
+                resources=["*"],
             ),
             iam.PolicyStatement(
-                sid='OrganizationsLookup',
+                sid="OrganizationsLookup",
                 effect=iam.Effect.ALLOW,
                 actions=[
-                    'organizations:List*',
-                    'organizations:Descibe*',
+                    "organizations:List*",
+                    "organizations:Descibe*",
                 ],
-                resources=['*'],
-            )
+                resources=["*"],
+            ),
         ]
 
         # TODO: Fix for Node.js 16 support when available
@@ -153,8 +169,8 @@ class PipelineStack (cdk.Stack):
             build_environment=codebuild.BuildEnvironment(
                 compute_type=codebuild.ComputeType.MEDIUM,
                 build_image=codebuild.LinuxBuildImage.AMAZON_LINUX_2_3,
-                ),
-                role_policy=role_policy,
+            ),
+            role_policy=role_policy,
         )
 
         return codebuild_options
