@@ -18,9 +18,15 @@ Note that the CDK app configuration is split into two parts:
 * SSO Permission Sets configuration, which can be carried between AWS Organizations. Permission Sets are configured in a YAML file, which can be checked in. This file must be checked into the repository
 * Organization-specific configuration. This configuration is provided via CDK context. This configuration can be provided in one of three ways - see later.
 
+## Architecture
+
+The following diagram provides an overview of the Ezpresso architecture.
+
+![Ezpresso overview](diagrams/ezpresso_architecture.drawio.png)
+
 ## Prerequisites
 
-The following prerequisites must be actioned to carry out a successful deployment of the CDK app and pipeline.
+The following prerequisites must be met to carry out a successful deployment of the CDK app and pipeline.
 
 ### Node.js 16+
 
