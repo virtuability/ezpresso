@@ -1,2 +1,28 @@
 [tool.black]
 line-length = 100
+
+[tool.poetry]
+name = "ezpresso"
+version = "0.1.0"
+description = "SSO (IAM Identity Center) permission set and assignment CDK app for AWS Organizations"
+authors = ["Morten Jensen <mjensen@virtuability.com>"]
+license = "Apache License, Version 2.0"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+aws-cdk-lib = "==2.*"
+constructs = ">=10.0.0,<11.0.0"
+pyyaml = "==6.*"
+boto3 = "^1.28.37"
+
+
+[tool.poetry.group.dev.dependencies]
+pytest = "==7.*"
+debugpy = "==1.*"
+pylint = "==2.*"
+black = "==22.*"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

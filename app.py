@@ -41,6 +41,9 @@ for context_key in context_keys:
         raise ValueError(f"Must specify context parameter: {context_key}")
     properties[context_key] = context
 
+target_account = app.node.try_get_context("target_account") or os.environ["CDK_DEFAULT_ACCOUNT"]
+target_region = app.node.try_get_context("target_region") or os.environ["CDK_DEFAULT_REGION"]
+
 content = file_read_yaml(properties["permission_sets_file"])
 permission_sets = PermissionSets(content)
 
@@ -66,8 +69,8 @@ PipelineStack(
     app,
     f"SSOPipeline",
     env=cdk.Environment(
-        account=os.environ["CDK_DEFAULT_ACCOUNT"],
-        region=os.environ["CDK_DEFAULT_REGION"],
+        account=target_account,
+        region=target_region,
     ),
     properties=properties,
     account_structure=account_structure,
