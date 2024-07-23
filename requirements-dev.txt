@@ -1,4 +1,4 @@
 pytest==7.*
 debugpy==1.*
 pylint==2.*
-black==22.*
+black
